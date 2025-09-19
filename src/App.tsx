@@ -50,6 +50,19 @@ function App() {
     );
   };
 
+  const MemberSignupRoute = () => {
+    const { token } = useParams();
+    const location = useLocation() as { state?: { inviteData?: any } };
+    const inviteData = location.state?.inviteData;
+    return (
+      <MemberSignup
+        token={token!}
+        inviteData={inviteData}
+        onBack={() => navigate("/")}
+      />
+    );
+  };
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -102,18 +115,7 @@ function App() {
               <Route path="/invite/:token" element={<InviteWrapper />} />
               <Route
                 path="/signup/member/:token"
-                element={(function MemberSignupWrapper() {
-                  const { token } = useParams();
-                  const location = useLocation() as { state?: { inviteData?: any } };
-                  const inviteData = location.state?.inviteData;
-                  return (
-                    <MemberSignup
-                      token={token!}
-                      inviteData={inviteData}
-                      onBack={() => navigate("/")}
-                    />
-                  );
-                })()}
+                element={<MemberSignupRoute />}
               />
               <Route
                 path="/reset-password/:token"
