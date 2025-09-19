@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const fs = require("fs").promises;
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 // Create transporter
 const createTransporter = () => {
