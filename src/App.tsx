@@ -41,7 +41,9 @@ function App() {
     return (
       <InviteVerification
         token={token!}
-        onVerified={() => navigate("/signup/member")}
+        onVerified={(inviteData) =>
+          navigate(`/signup/member/${token}`, { state: { inviteData } })
+        }
         onBack={() => navigate("/")}
       />
     );
