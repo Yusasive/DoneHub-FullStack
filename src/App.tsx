@@ -18,6 +18,7 @@ import {
   Navigate,
   useNavigate,
   useParams,
+  useLocation,
 } from "react-router-dom";
 
 function App() {
@@ -41,7 +42,22 @@ function App() {
     return (
       <InviteVerification
         token={token!}
-        onVerified={() => navigate("/signup/member")}
+        onVerified={(inviteData) =>
+          navigate(`/signup/member/${token}`, { state: { inviteData } })
+        }
+        onBack={() => navigate("/")}
+      />
+    );
+  };
+
+  const MemberSignupRoute = () => {
+    const { token } = useParams();
+    const location = useLocation() as { state?: { inviteData?: any } };
+    const inviteData = location.state?.inviteData;
+    return (
+      <MemberSignup
+        token={token!}
+        inviteData={inviteData}
         onBack={() => navigate("/")}
       />
     );
@@ -98,13 +114,8 @@ function App() {
               />
               <Route path="/invite/:token" element={<InviteWrapper />} />
               <Route
-                path="/signup/member"
-                element={
-                  <MemberSignup
-                    token="some-token"
-                    onBack={() => navigate("/")}
-                  />
-                }
+                path="/signup/member/:token"
+                element={<MemberSignupRoute />}
               />
               <Route
                 path="/reset-password/:token"

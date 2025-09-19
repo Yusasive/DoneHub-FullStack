@@ -494,7 +494,10 @@ router.get("/verify-invite/:token", async (req, res) => {
   try {
     const { token } = req.params;
 
-    const invite = await Invite.findOne({ token, status: "pending" })
+    // Hash incoming token to match stored tokenHash
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const invite = await Invite.findOne({ tokenHash, status: "pending" })
       .populate("org_id", "name")
       .populate("created_by", "name");
 
