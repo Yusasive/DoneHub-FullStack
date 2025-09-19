@@ -102,15 +102,18 @@ function App() {
               <Route path="/invite/:token" element={<InviteWrapper />} />
               <Route
                 path="/signup/member/:token"
-                element={
-                  ((): JSX.Element => {
-                    const { token } = useParams();
-                    // eslint-disable-next-line react-hooks/rules-of-hooks
-                    const location = (window as any).routerLocation || undefined;
-                    // Fallback to react-router useLocation when rendering (wrapped below)
-                    return <MemberSignup token={token!} onBack={() => navigate("/" as any)} />;
-                  })() as unknown as React.ReactElement
-                }
+                element={(function MemberSignupWrapper() {
+                  const { token } = useParams();
+                  const location = useLocation() as { state?: { inviteData?: any } };
+                  const inviteData = location.state?.inviteData;
+                  return (
+                    <MemberSignup
+                      token={token!}
+                      inviteData={inviteData}
+                      onBack={() => navigate("/")}
+                    />
+                  );
+                })()}
               />
               <Route
                 path="/reset-password/:token"
