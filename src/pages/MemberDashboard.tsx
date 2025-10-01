@@ -10,14 +10,16 @@ export const MemberDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.org_id) {
+    const orgId = user?.org_id;
+
+    if (!orgId) {
       setLoading(false);
       return;
     }
 
     (async () => {
       try {
-        const organizationRecord = await getOrganizationById(user.org_id);
+        const organizationRecord = await getOrganizationById(orgId);
         setOrganization(organizationRecord);
       } catch (error) {
         console.error('Error loading organization:', error);
