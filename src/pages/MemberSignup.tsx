@@ -5,13 +5,14 @@ import { completeMemberSignup, verifyInviteToken } from '../utils/mockApi';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
+import type { Invite, Organization } from '../types';
 
 export const MemberSignup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [inviteData, setInviteData] = useState<{ invite: any; organization: any } | null>(null);
+  const [inviteData, setInviteData] = useState<{ invite: Invite; organization: Organization | null } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     password: '',
