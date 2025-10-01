@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { approveOrgAdminRequest, listOrgAdminRequests, rejectOrgAdminRequest } from '../utils/mockApi';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { StatusBadge } from '../components/StatusBadge';
@@ -18,13 +18,8 @@ export const SystemAdminDashboard = () => {
 
   const loadRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from('org_admin_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setRequests(data || []);
+      const data = await listOrgAdminRequests();
+      setRequests(data);
     } catch (error) {
       console.error('Error loading requests:', error);
     } finally {
@@ -35,36 +30,7 @@ export const SystemAdminDashboard = () => {
   const handleApprove = async (request: OrgAdminRequest) => {
     setActionLoading(true);
     try {
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: request.org_name,
-          created_by: request.id,
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      const { error: userError } = await supabase.from('users').insert({
-        id: request.id,
-        name: request.name,
-        email: request.email,
-        role: 'org_admin',
-        org_id: orgData.id,
-        status: 'active',
-      });
-
-      if (userError) throw userError;
-
-      const { error: requestError } = await supabase
-        .from('org_admin_requests')
-        .update({ status: 'active' })
-        .eq('id', request.id);
-
-      if (requestError) throw requestError;
-
+      await approveOrgAdminRequest(request.id);
       setSelectedRequest(null);
       await loadRequests();
     } catch (error: any) {
@@ -83,13 +49,7 @@ export const SystemAdminDashboard = () => {
 
     setActionLoading(true);
     try {
-      const { error } = await supabase
-        .from('org_admin_requests')
-        .update({ status: 'rejected', rejected_reason: rejectionReason })
-        .eq('id', request.id);
-
-      if (error) throw error;
-
+      await rejectOrgAdminRequest(request.id, rejectionReason);
       setSelectedRequest(null);
       setRejectionReason('');
       await loadRequests();

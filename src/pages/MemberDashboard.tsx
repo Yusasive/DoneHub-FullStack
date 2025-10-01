@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../utils/supabase';
+import { getOrganizationById } from '../utils/mockApi';
 import { Card } from '../components/Card';
 import { Organization } from '../types';
 
@@ -10,27 +10,24 @@ export const MemberDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.org_id) {
-      loadOrganization();
-    }
-  }, [user]);
+    const orgId = user?.org_id;
 
-  const loadOrganization = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', user?.org_id)
-        .maybeSingle();
-
-      if (error) throw error;
-      setOrganization(data);
-    } catch (error) {
-      console.error('Error loading organization:', error);
-    } finally {
+    if (!orgId) {
       setLoading(false);
+      return;
     }
-  };
+
+    (async () => {
+      try {
+        const organizationRecord = await getOrganizationById(orgId);
+        setOrganization(organizationRecord);
+      } catch (error) {
+        console.error('Error loading organization:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
 
   if (loading) {
     return (

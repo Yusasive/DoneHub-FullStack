@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../utils/supabase';
+import {
+  createInvite,
+  listOrganizationInvites,
+  listOrganizationMembers,
+} from '../utils/mockApi';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
@@ -27,22 +31,19 @@ export const OrgAdminDashboard = () => {
   const [inviteLink, setInviteLink] = useState('');
 
   useEffect(() => {
-    if (user?.org_id) {
-      loadMembers();
-      loadInvites();
+    if (!user?.org_id) {
+      setLoading(false);
+      return;
     }
+
+    loadMembers(user.org_id);
+    loadInvites(user.org_id);
   }, [user]);
 
-  const loadMembers = async () => {
+  const loadMembers = async (orgId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('org_id', user?.org_id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setMembers(data || []);
+      const data = await listOrganizationMembers(orgId);
+      setMembers(data);
     } catch (error) {
       console.error('Error loading members:', error);
     } finally {
@@ -50,16 +51,10 @@ export const OrgAdminDashboard = () => {
     }
   };
 
-  const loadInvites = async () => {
+  const loadInvites = async (orgId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('org_id', user?.org_id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setInvites(data || []);
+      const data = await listOrganizationInvites(orgId);
+      setInvites(data);
     } catch (error) {
       console.error('Error loading invites:', error);
     }
@@ -74,20 +69,16 @@ export const OrgAdminDashboard = () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      const { error } = await supabase.from('invites').insert({
-        org_id: user?.org_id,
-        email: inviteEmail,
-        token,
-        expires_at: expiresAt.toISOString(),
-        status: 'pending',
-      });
+      if (!user?.org_id) {
+        throw new Error('Organization not found for current user');
+      }
 
-      if (error) throw error;
+      await createInvite(user.org_id, inviteEmail, token, expiresAt.toISOString());
 
       const link = `${window.location.origin}/signup/member?token=${token}`;
       setInviteLink(link);
       setInviteEmail('');
-      await loadInvites();
+      await loadInvites(user.org_id);
     } catch (error: any) {
       console.error('Error sending invite:', error);
       alert(error.message);
