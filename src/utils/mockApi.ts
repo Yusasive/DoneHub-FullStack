@@ -193,8 +193,9 @@ export const listOrgAdminRequests = async (): Promise<OrgAdminRequest[]> => {
     .map(sanitizeRequest);
 };
 
-export const approveOrgAdminRequest = async (requestId: string): Promise<{ organization: Organization; user: User }>
-=> {
+export const approveOrgAdminRequest = async (
+  requestId: string,
+): Promise<{ organization: Organization; user: User }> => {
   const request = mockDb.orgAdminRequests.find((candidate) => candidate.id === requestId);
 
   if (!request) {
