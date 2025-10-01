@@ -1,18 +1,23 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session } from '@supabase/supabase-js';
-import { supabase } from '../utils/supabase';
-import { User } from '../types';
+import type { User } from '../types';
+import {
+  completeMemberSignup,
+  getUserById,
+  signIn as mockSignIn,
+  signOut as mockSignOut,
+  signUp as mockSignUp,
+} from '../utils/mockApi';
 
-interface AuthContextType {
+type AuthContextType = {
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const STORAGE_KEY = 'donehub_active_user';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -24,73 +29,70 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
+    const storedUserId = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+
+    if (!storedUserId) {
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const profile = await getUserById(storedUserId);
+        if (profile) {
+          setUser(profile);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } finally {
         setLoading(false);
       }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setSession(session);
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
-      })();
-    });
-
-    return () => subscription.unsubscribe();
+    })();
   }, []);
 
-  const loadUserProfile = async (userId: string) => {
+  const handleSignIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setUser(data);
+      const authenticatedUser = await mockSignIn(email, password);
+      setUser(authenticatedUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, authenticatedUser.id);
+      }
+      return { error: null };
     } catch (error) {
-      console.error('Error loading user profile:', error);
-    } finally {
-      setLoading(false);
+      return { error: error as Error };
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+  const handleSignUp = async (email: string, password: string, name?: string) => {
+    try {
+      const newUser = await mockSignUp(email, password, name);
+      setUser(newUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, newUser.id);
+      }
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const handleSignOut = async () => {
+    await mockSignOut();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
     setUser(null);
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
-    session,
     loading,
-    signIn,
-    signUp,
-    signOut,
+    signIn: handleSignIn,
+    signUp: handleSignUp,
+    signOut: handleSignOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
