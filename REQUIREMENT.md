@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 
 **Project:** DoneHub – Modernized User Onboarding & Access Flow
-**Stack:** MERN (MongoDB, Express.js, React, Node.js)
+**Stack:** React (Vite) frontend with in-memory mock data (future backend: MongoDB & Express)
 **Brand Identity:** Green (#008000) & White (#FFFFFF)
 
 ---
