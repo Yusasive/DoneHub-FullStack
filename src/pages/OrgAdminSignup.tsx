@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabase';
+import { createOrgAdminRequest } from '../utils/mockApi';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
@@ -52,25 +52,13 @@ export const OrgAdminSignup = () => {
 
     setLoading(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      await createOrgAdminRequest({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
+        orgName: formData.orgName,
+        role: formData.role,
       });
-
-      if (authError) throw authError;
-
-      const { error: requestError } = await supabase
-        .from('org_admin_requests')
-        .insert({
-          user_id: authData.user?.id,
-          name: formData.name,
-          email: formData.email,
-          org_name: formData.orgName,
-          role: formData.role,
-          status: 'pending',
-        });
-
-      if (requestError) throw requestError;
 
       navigate('/signup-success');
     } catch (error: any) {
