@@ -1,12 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { User } from '../types';
-import {
-  completeMemberSignup,
-  getUserById,
-  signIn as mockSignIn,
-  signOut as mockSignOut,
-  signUp as mockSignUp,
-} from '../utils/mockApi';
+import { getUserById, signIn as mockSignIn, signOut as mockSignOut, signUp as mockSignUp } from '../utils/mockApi';
 
 type AuthContextType = {
   user: User | null;
