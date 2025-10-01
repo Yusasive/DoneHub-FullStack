@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../utils/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { completeMemberSignup, verifyInviteToken } from '../utils/mockApi';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
@@ -8,8 +9,9 @@ import { Card } from '../components/Card';
 export const MemberSignup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [inviteData, setInviteData] = useState<any>(null);
+  const [inviteData, setInviteData] = useState<{ invite: any; organization: any } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -27,25 +29,8 @@ export const MemberSignup = () => {
 
     const verifyInvite = async () => {
       try {
-        const { data, error } = await supabase
-          .from('invites')
-          .select('*, organizations(name)')
-          .eq('token', token)
-          .eq('status', 'pending')
-          .maybeSingle();
-
-        if (error || !data) {
-          setErrors({ invite: 'Invalid or expired invite link' });
-          return;
-        }
-
-        const expiresAt = new Date(data.expires_at);
-        if (expiresAt < new Date()) {
-          setErrors({ invite: 'This invite has expired' });
-          return;
-        }
-
-        setInviteData(data);
+        const result = await verifyInviteToken(token);
+        setInviteData(result);
       } catch (error: any) {
         setErrors({ invite: error.message || 'Error verifying invite' });
       }
@@ -73,30 +58,17 @@ export const MemberSignup = () => {
 
     setLoading(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: inviteData.email,
+      if (!inviteData) {
+        throw new Error('Invite not loaded');
+      }
+
+      await completeMemberSignup({
+        token: inviteData.invite.token,
+        name: formData.name,
         password: formData.password,
       });
 
-      if (authError) throw authError;
-
-      const { error: userError } = await supabase.from('users').insert({
-        id: authData.user?.id,
-        name: formData.name,
-        email: inviteData.email,
-        role: 'member',
-        org_id: inviteData.org_id,
-        status: 'active',
-      });
-
-      if (userError) throw userError;
-
-      const { error: inviteError } = await supabase
-        .from('invites')
-        .update({ status: 'accepted' })
-        .eq('id', inviteData.id);
-
-      if (inviteError) throw inviteError;
+      await signIn(inviteData.invite.email, formData.password);
 
       navigate('/dashboard');
     } catch (error: any) {
@@ -147,7 +119,7 @@ export const MemberSignup = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Join {inviteData.organizations?.name}</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Join {inviteData.organization?.name}</h2>
           <p className="mt-2 text-sm text-gray-600">
             You've been invited to join as a member
           </p>
@@ -158,7 +130,7 @@ export const MemberSignup = () => {
             <Input
               label="Email"
               type="email"
-              value={inviteData.email}
+              value={inviteData.invite.email}
               disabled
               className="bg-gray-50"
             />
