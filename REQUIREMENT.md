@@ -72,14 +72,16 @@ The goal is to:
 
 ## 4. Technical Design
 
-### 4.1 Data Models (MongoDB)
+The current build is frontend-only. Data is served from in-memory mock collections that mirror the planned backend entities so that flows, dashboards, and state transitions behave exactly as they would once services go live. This lets design and product teams validate journeys without standing up infrastructure.
+
+### 4.1 Planned Data Models (MongoDB)
 
 * **users:** {_id, name, email, role, org_id, status}
 * **organizations:** {_id, name, branding, created_by, status}
 * **invites:** {_id, org_id, email, token, expires_at, status}
 * **tasks:** {_id, org_id, assigned_to, ...}
 
-### 4.2 APIs (Express.js)
+### 4.2 Planned APIs (Express.js)
 
 * `POST /auth/signup-admin` → create pending admin request
 * `POST /auth/signup-member` → accept invite link
@@ -87,7 +89,7 @@ The goal is to:
 * `POST /admin/approve/:id` → approve org admin
 * `POST /org/invite` → send invite link to member
 
-### 4.3 Authentication & Security
+### 4.3 Authentication & Security Roadmap
 
 * **JWT** sessions (short-lived + refresh token).
 * **Email verification** via tokenized links.
